@@ -61,6 +61,7 @@
 #include "mongo/util/file_allocator.h"
 #include "mongo/util/goodies.h"
 #include "mongo/util/mongoutils/str.h"
+#include "mongo/db/notifications/notifier.hpp"
 
 namespace mongo {
     
@@ -1142,10 +1143,12 @@ namespace mongo {
         //  so don't call ::_exit() yet, or say "really exiting now"
         //
         if ( rc == EXIT_WINDOWS_SERVICE_STOP ) {
+		MongodbChangeNotifier::Instance()->stop();
             if ( c ) c->shutdown();
             return;
         }
 #endif
+	MongodbChangeNotifier::Instance()->stop();
         tryToOutputFatal( "dbexit: really exiting now" );
         if ( c ) c->shutdown();
         ::_exit(rc);

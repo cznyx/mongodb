@@ -140,7 +140,7 @@ namespace mongo {
         bool sslWeakCertificateValidation;
         bool sslFIPSMode;
 #endif
-
+	std::string notifierProto;
         /**
          * Switches to enable experimental (unsupported) features.
          */

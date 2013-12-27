@@ -219,6 +219,8 @@ add_option( "use-system-snappy", "use system version of snappy library", 0, True
 add_option( "use-system-sm", "use system version of spidermonkey library", 0, True )
 add_option( "use-system-v8", "use system version of v8 library", 0, True )
 
+add_option( "use-system-zeromq", "use system version of zeromq libraries", 0, True)
+
 add_option( "use-system-all" , "use all system libraries", 0 , True )
 
 add_option( "use-cpu-profiler",
@@ -307,6 +309,7 @@ env = Environment( BUILD_DIR=variantDir,
                    PYSYSPLATFORM=os.sys.platform,
 
                    PCRE_VERSION='8.30',
+                   ZEROMQ_VERSION='2.2.0',
                    CONFIGUREDIR = '#' + scons_data_dir + '/sconf_temp',
                    CONFIGURELOG = '#' + scons_data_dir + '/config.log'
                    )
@@ -787,6 +790,8 @@ if not use_system_version_of_library("pcre"):
 if not use_system_version_of_library("boost"):
     env.Prepend(CPPPATH=['$BUILD_DIR/third_party/boost'],
                 CPPDEFINES=['BOOST_ALL_NO_LIB'])
+if not use_system_version_of_library("zeromq"):
+    env.Prepend(CPPPATH=['$BUILD_DIR/third_party/zeromq-${ZEROMQ_VERSION}/include'])
 
 env.Prepend(CPPPATH=['$BUILD_DIR/third_party/s2'])
 env.Prepend(CPPPATH=['$BUILD_DIR/third_party/libstemmer_c/include'])
@@ -799,7 +804,22 @@ mongo_modules = moduleconfig.discover_modules('src/mongo/db/modules')
 env['MONGO_MODULES'] = [m.name for m in mongo_modules]
 
 # --- check system ---
+def run(cmd):
+    res = os.system(cmd)
+    if(os.WIFEXITED(res)):
+        code = os.WEXITSTATUS(res)
+        if code != 0:
+            print "Error: " + str(code)
+            sys.exit(code)
 
+def execConfigure(path):
+    print("Configure to generate platform.hpp")
+    startDir = os.getcwd()
+    destDir = startDir + "/" + path
+    print "CWD: " + startDir + " Will change to: " + destDir
+    os.chdir(destDir)
+    run("./configure")
+    os.chdir(startDir)
 
 def doConfigure(myenv):
     conf = Configure(myenv)
@@ -819,6 +839,18 @@ def doConfigure(myenv):
             if not conf.CheckLib([ l + boostCompiler + "-mt" + boostVersion,
                                    l + boostCompiler + boostVersion ], language='C++' ):
                 Exit(1)
+
+    if use_system_version_of_library("zeromq"):
+        if not conf.CheckCXXHeader( "zmq.hpp" ):
+            print( "can't find zmq headers" )
+            Exit(1)
+
+        if not conf.CheckLib(["zmq"]):
+            Exit(1)
+    else:
+        execConfigure("src/third_party/zeromq-" + env["ZEROMQ_VERSION"])
+        if not conf.CheckLib(["uuid","rt"]):
+            Exit(1)
 
     if conf.CheckHeader('unistd.h'):
         myenv.Append(CPPDEFINES=['MONGO_HAVE_HEADER_UNISTD_H'])

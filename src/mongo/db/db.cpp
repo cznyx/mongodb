@@ -60,6 +60,7 @@
 #include "mongo/util/startup_test.h"
 #include "mongo/util/text.h"
 #include "mongo/util/version.h"
+#include "notifications/notifier.hpp"
 
 #if !defined(_WIN32)
 # include <sys/file.h>
@@ -569,6 +570,7 @@ namespace mongo {
         Client::initThread("initandlisten");
 
         Logstream::get().addGlobalTee( new RamLog("global") );
+	MongodbChangeNotifier::Instance()->start(cmdLine.notifierProto);
 
         bool is32bit = sizeof(int*) == 4;
 
@@ -746,6 +748,7 @@ static void buildOptionsDescriptions(po::options_description *pVisible,
     po::options_description sharding_options("Sharding options");
     po::options_description hidden_sharding_options("Sharding options");
     po::options_description ssl_options("SSL options");
+    po::options_description notifier_options("Notifier options");
 
     CmdLine::addGlobalOptions( general_options , hidden_options , ssl_options );
 
@@ -838,6 +841,8 @@ static void buildOptionsDescriptions(po::options_description *pVisible,
     ("opIdMem", "DEPRECATED")
     ;
 
+    notifier_options.add_options()("proto",po::value<string>(),"specify the publish protocol, e.g. tcp://*:5556");
+
     positional_options.add("command", 3);
     visible_options.add(general_options);
 #if defined(_WIN32)
@@ -850,6 +855,7 @@ static void buildOptionsDescriptions(po::options_description *pVisible,
 #ifdef MONGO_SSL
     visible_options.add(ssl_options);
 #endif
+    visible_options.add(notifier_options);
     Module::addOptions( visible_options );
 }
 
@@ -1151,6 +1157,10 @@ static void processCommandLineOptions(const std::vector<std::string>& argv) {
             out() << "****" << endl;
             dbexit( EXIT_BADOPTIONS );
         }
+
+	if (params.count("proto")) {
+		cmdLine.notifierProto = params["proto"].as<string>();
+	}
 
         // needs to be after things like --configsvr parsing, thus here.
         if( repairpath.empty() )

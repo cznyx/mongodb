@@ -61,3 +61,11 @@ else:
                       LIBDEPS=['gperftools-2.0/tcmalloc_minimal'])
 
 env.SConscript('libstemmer_c/SConscript')
+
+if use_system_version_of_library("zeromq"):
+    env.StaticLibrary("shim_zeromq", ['shim_zeromq.cpp'],
+                      SYSLIBDEPS=["zmq"])
+else:
+    env.SConscript('zeromq-${ZEROMQ_VERSION}/SConscript')
+    env.StaticLibrary( "shim_zeromq", ['shim_zeromq.cpp'],
+                       LIBDEPS=[ 'zeromq-${ZEROMQ_VERSION}/zeromq'] )
