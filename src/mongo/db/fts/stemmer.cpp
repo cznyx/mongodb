@@ -17,6 +17,7 @@
 */
 
 #include <string>
+#include <cstdlib>
 
 #include "mongo/db/fts/stemmer.h"
 
