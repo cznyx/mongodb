@@ -330,7 +330,8 @@ namespace mongo {
           d delete / remove
           u update
     */
-    void logOp(const char *opstr, const char *ns, const BSONObj& obj, BSONObj *patt, bool *b, bool fromMigrate) {
+	void logOp(const char *opstr, const char *ns, const BSONObj& obj, BSONObj *patt, bool *b, bool fromMigrate,
+		const BSONObj* fullObj) {
         if ( replSettings.master ) {
             _logOp(opstr, ns, 0, obj, patt, b, fromMigrate);
         }

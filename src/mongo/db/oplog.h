@@ -48,7 +48,7 @@ namespace mongo {
 
        See _logOp() in oplog.cpp for more details.
     */
-    void logOp( const char *opstr, const char *ns, const BSONObj& obj, BSONObj *patt = 0, bool *b = 0, bool fromMigrate = false );
+    void logOp( const char *opstr, const char *ns, const BSONObj& obj, BSONObj *patt = 0, bool *b = 0, bool fromMigrate = false, const BSONObj* fullObj = NULL);
 
     void logKeepalive();
 

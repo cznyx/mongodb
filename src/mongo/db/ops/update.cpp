@@ -82,6 +82,7 @@ namespace mongo {
 
         /* look for $inc etc.  note as listed here, all fields to inc must be this type, you can't set some
            regular ones at the moment. */
+	BSONObj newObj;
         if ( isOperatorUpdate ) {
             const BSONObj& onDisk = loc.obj();
             auto_ptr<ModSetState> mss = mods->prepare( onDisk, false /* not an insertion */ );
@@ -90,9 +91,10 @@ namespace mongo {
                 mss->applyModsInPlace(true);
                 debug.fastmod = true;
                 DEBUGUPDATE( "\t\t\t updateById doing in place update" );
+		newObj = onDisk;
             }
             else {
-                BSONObj newObj = mss->createNewFromMods();
+                newObj = mss->createNewFromMods();
                 checkTooLarge(newObj);
                 verify(nsdt);
                 theDataFileMgr.updateRecord(ns, d, nsdt, r, loc , newObj.objdata(), newObj.objsize(), debug);
@@ -109,7 +111,7 @@ namespace mongo {
                 // record, that would be replicated as "clear this record", which is not what
                 // we want. Therefore, to get a no-op in the replica, we simply don't log.
                 if ( logObj.nFields() ) {
-                    logOp("u", ns, logObj, &pattern, 0, fromMigrate );
+			logOp("u", ns, logObj, &pattern, 0, fromMigrate, &newObj);
                 }
             }
             return UpdateResult( 1 , 1 , 1 , BSONObj() );
@@ -122,7 +124,7 @@ namespace mongo {
         verify(nsdt);
         theDataFileMgr.updateRecord(ns, d, nsdt, r, loc , updateobj.objdata(), updateobj.objsize(), debug );
         if ( logop ) {
-            logOp("u", ns, updateobj, &patternOrig, 0, fromMigrate );
+		logOp("u", ns, updateobj, &patternOrig, 0, fromMigrate, &updateobj);
         }
         return UpdateResult( 1 , 0 , 1 , BSONObj() );
     }
@@ -192,7 +194,7 @@ namespace mongo {
                     BSONObj no = updateobj;
                     theDataFileMgr.insertWithObjMod(ns, no, false, su);
                     if ( logop )
-                        logOp( "i", ns, no, 0, 0, fromMigrate );
+			    logOp( "i", ns, no, 0, 0, fromMigrate, &no);
 
                     return UpdateResult( 0 , 0 , 1 , no );
                 }
@@ -342,7 +344,7 @@ namespace mongo {
                     // always be valid.  "system.users" updates must never be done in place, in
                     // order to ensure that they are validated inside DataFileMgr::updateRecord(.).
                     bool isSystemUsersMod = (NamespaceString(ns).coll == "system.users");
-
+		    BSONObj newObj;
                     if ( !mss->isUpdateIndexed() && mss->canApplyInPlace() && !isSystemUsersMod ) {
                         mss->applyModsInPlace( true );// const_cast<BSONObj&>(onDisk) );
 
@@ -353,11 +355,11 @@ namespace mongo {
                         if ( modsIsIndexed ) {
                             seenObjects.insert( loc );
                         }
-
+			newObj = loc.obj();
                         d->paddingFits();
                     }
                     else {
-                        BSONObj newObj = mss->createNewFromMods();
+                        newObj = mss->createNewFromMods();
                         checkTooLarge(newObj);
                         DiskLoc newLoc = theDataFileMgr.updateRecord(ns,
                                                                      d,
@@ -387,7 +389,7 @@ namespace mongo {
                         // this record", which is not what we want. Therefore, to get a no-op
                         // in the replica, we simply don't log.
                         if ( logObj.nFields() ) {
-                            logOp("u", ns, logObj , &pattern, 0, fromMigrate );
+				logOp("u", ns, logObj , &pattern, 0, fromMigrate,&newObj);
                         }
                     }
                     numModded++;
@@ -408,7 +410,7 @@ namespace mongo {
                 theDataFileMgr.updateRecord(ns, d, nsdt, r, loc , updateobj.objdata(), updateobj.objsize(), debug, su);
                 if ( logop ) {
                     DEV wassert( !su ); // super used doesn't get logged, this would be bad.
-                    logOp("u", ns, updateobj, &pattern, 0, fromMigrate );
+                    logOp("u", ns, updateobj, &pattern, 0, fromMigrate,&updateobj);
                 }
                 return UpdateResult( 1 , 0 , 1 , BSONObj() );
             } while ( c->ok() );
@@ -425,7 +427,7 @@ namespace mongo {
                 debug.fastmodinsert = true;
                 theDataFileMgr.insertWithObjMod(ns, newObj, false, su);
                 if ( logop )
-                    logOp( "i", ns, newObj, 0, 0, fromMigrate );
+			logOp( "i", ns, newObj, 0, 0, fromMigrate,&newObj);
 
                 return UpdateResult( 0 , 1 , 1 , newObj );
             }
@@ -435,7 +437,7 @@ namespace mongo {
             BSONObj no = updateobj;
             theDataFileMgr.insertWithObjMod(ns, no, false, su);
             if ( logop )
-                logOp( "i", ns, no, 0, 0, fromMigrate );
+		    logOp( "i", ns, no, 0, 0, fromMigrate,&no);
             return UpdateResult( 0 , 0 , 1 , no );
         }
 

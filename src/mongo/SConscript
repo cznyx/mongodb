@@ -45,6 +45,7 @@ env.StaticLibrary('foundation',
                            '$BUILD_DIR/mongo/base/base',
                            '$BUILD_DIR/mongo/platform/platform',
                            '$BUILD_DIR/third_party/shim_allocator',
+                           '$BUILD_DIR/third_party/shim_zeromq',
                            '$BUILD_DIR/third_party/shim_boost'])
 
 env.CppUnitTest('text_test', 'util/text_test.cpp', LIBDEPS=['foundation'])
@@ -444,7 +445,8 @@ serverOnlyFiles = [ "db/curop.cpp",
                     "db/commands/storage_details.cpp",
                     "db/pipeline/pipeline_d.cpp",
                     "db/pipeline/document_source_cursor.cpp",
-                    "db/driverHelpers.cpp" ]
+                    "db/driverHelpers.cpp",
+                    "db/notifications/notifier.cpp" ]
 
 env.Library( "dbcmdline", "db/cmdline.cpp", LIBDEPS=['bson', 'server_parameters'] )
 env.CppUnitTest('cmdline_test', 'db/cmdline_test.cpp', LIBDEPS=['dbcmdline'])

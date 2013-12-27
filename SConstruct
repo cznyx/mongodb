@@ -217,6 +217,7 @@ add_option( "use-system-boost", "use system version of boost libraries", 0, True
 add_option( "use-system-snappy", "use system version of snappy library", 0, True )
 
 add_option( "use-system-sm", "use system version of spidermonkey library", 0, True )
+
 add_option( "use-system-v8", "use system version of v8 library", 0, True )
 
 add_option( "use-system-zeromq", "use system version of zeromq libraries", 0, True)
@@ -812,11 +813,10 @@ def run(cmd):
             print "Error: " + str(code)
             sys.exit(code)
 
-def execConfigure(path):
+def runConfigure(path):
     print("Configure to generate platform.hpp")
     startDir = os.getcwd()
     destDir = startDir + "/" + path
-    print "CWD: " + startDir + " Will change to: " + destDir
     os.chdir(destDir)
     run("./configure")
     os.chdir(startDir)
@@ -848,9 +848,8 @@ def doConfigure(myenv):
         if not conf.CheckLib(["zmq"]):
             Exit(1)
     else:
-        execConfigure("src/third_party/zeromq-" + env["ZEROMQ_VERSION"])
-        if not conf.CheckLib(["uuid","rt"]):
-            Exit(1)
+        runConfigure("src/third_party/zeromq-" + env["ZEROMQ_VERSION"])
+        conf.CheckLib(["uuid","rt"])
 
     if conf.CheckHeader('unistd.h'):
         myenv.Append(CPPDEFINES=['MONGO_HAVE_HEADER_UNISTD_H'])
