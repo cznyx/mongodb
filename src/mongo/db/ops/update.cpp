@@ -25,6 +25,7 @@
 
 #include "update.h"
 #include "update_internal.h"
+#include "mongo/db/notifications/notifier.hpp"
 
 //#define DEBUGUPDATE(x) cout << x << endl;
 #define DEBUGUPDATE(x)
@@ -100,7 +101,7 @@ namespace mongo {
                 theDataFileMgr.updateRecord(ns, d, nsdt, r, loc , newObj.objdata(), newObj.objsize(), debug);
             }
 
-            if ( logop ) {
+            {
                 DEV verify( mods->size() );
                 BSONObj pattern = patternOrig;
                 BSONObj logObj = mss->getOpLogRewrite();
@@ -111,7 +112,9 @@ namespace mongo {
                 // record, that would be replicated as "clear this record", which is not what
                 // we want. Therefore, to get a no-op in the replica, we simply don't log.
                 if ( logObj.nFields() ) {
-			logOp("u", ns, logObj, &pattern, 0, fromMigrate, &newObj);
+			if(logop)
+				logOp("u", ns, logObj, &pattern, 0, fromMigrate, &newObj);
+			postNotification("u",ns,logObj,&pattern,&newObj);
                 }
             }
             return UpdateResult( 1 , 1 , 1 , BSONObj() );
@@ -123,8 +126,10 @@ namespace mongo {
         checkNoMods( updateobj );
         verify(nsdt);
         theDataFileMgr.updateRecord(ns, d, nsdt, r, loc , updateobj.objdata(), updateobj.objsize(), debug );
-        if ( logop ) {
-		logOp("u", ns, updateobj, &patternOrig, 0, fromMigrate, &updateobj);
+        {
+		if(logop)
+			logOp("u", ns, updateobj, &patternOrig, 0, fromMigrate, &updateobj);
+		postNotification("u",ns,updateobj,&patternOrig,&updateobj);
         }
         return UpdateResult( 1 , 0 , 1 , BSONObj() );
     }
@@ -195,7 +200,7 @@ namespace mongo {
                     theDataFileMgr.insertWithObjMod(ns, no, false, su);
                     if ( logop )
 			    logOp( "i", ns, no, 0, 0, fromMigrate, &no);
-
+		    postNotification("i",ns,no,0,&no);
                     return UpdateResult( 0 , 0 , 1 , no );
                 }
             }
@@ -378,7 +383,7 @@ namespace mongo {
 
                     }
 
-                    if ( logop ) {
+                    {
                         DEV verify( mods->size() );
                         BSONObj logObj = mss->getOpLogRewrite();
                         DEBUGUPDATE( "\t rewrite update: " << logObj );
@@ -389,7 +394,9 @@ namespace mongo {
                         // this record", which is not what we want. Therefore, to get a no-op
                         // in the replica, we simply don't log.
                         if ( logObj.nFields() ) {
-				logOp("u", ns, logObj , &pattern, 0, fromMigrate,&newObj);
+				if(logop)
+					logOp("u", ns, logObj , &pattern, 0, fromMigrate,&newObj);
+				postNotification("u",ns,logObj,&pattern,&newObj);
                         }
                     }
                     numModded++;
@@ -408,9 +415,12 @@ namespace mongo {
                 BSONElementManipulator::lookForTimestamps( updateobj );
                 checkNoMods( updateobj );
                 theDataFileMgr.updateRecord(ns, d, nsdt, r, loc , updateobj.objdata(), updateobj.objsize(), debug, su);
-                if ( logop ) {
-                    DEV wassert( !su ); // super used doesn't get logged, this would be bad.
-                    logOp("u", ns, updateobj, &pattern, 0, fromMigrate,&updateobj);
+                {
+                    DEV wassert( !su ); // super used doesn't get
+					// logged, this would be bad.
+		    if(logop)
+			    logOp("u", ns, updateobj, &pattern, 0, fromMigrate,&updateobj);
+		    postNotification("u",ns,updateobj,&pattern,&updateobj);
                 }
                 return UpdateResult( 1 , 0 , 1 , BSONObj() );
             } while ( c->ok() );
@@ -428,7 +438,7 @@ namespace mongo {
                 theDataFileMgr.insertWithObjMod(ns, newObj, false, su);
                 if ( logop )
 			logOp( "i", ns, newObj, 0, 0, fromMigrate,&newObj);
-
+		postNotification("i",ns,newObj,0,&newObj);
                 return UpdateResult( 0 , 1 , 1 , newObj );
             }
             uassert( 10159 ,  "multi update only works with $ operators" , ! multi );
@@ -438,6 +448,7 @@ namespace mongo {
             theDataFileMgr.insertWithObjMod(ns, no, false, su);
             if ( logop )
 		    logOp( "i", ns, no, 0, 0, fromMigrate,&no);
+	    postNotification("i",ns,no,0,&no);
             return UpdateResult( 0 , 0 , 1 , no );
         }
 

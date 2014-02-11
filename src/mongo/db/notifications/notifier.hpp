@@ -31,4 +31,6 @@ namespace mongo{
 		int started_;
 	};
 
+	void postNotification( const char *opstr, const char *ns, const BSONObj& obj, BSONObj *patt = 0, const BSONObj* fullObj = NULL);
+
 }

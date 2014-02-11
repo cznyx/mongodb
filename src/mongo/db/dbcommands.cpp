@@ -59,6 +59,7 @@
 #include "mongo/server.h"
 #include "mongo/util/lruishmap.h"
 #include "mongo/util/md5.hpp"
+#include "mongo/db/notifications/notifier.hpp"
 
 namespace mongo {
 
@@ -1951,6 +1952,7 @@ namespace mongo {
             retval = _execCommand(c, dbname, cmdObj, queryOptions, errmsg, result, fromRepl);
             if ( retval && c->logTheOp() && ! fromRepl ) {
                 logOp("c", cmdns, cmdObj);
+		postNotification("c",cmdns,cmdObj);
             }
         }
 

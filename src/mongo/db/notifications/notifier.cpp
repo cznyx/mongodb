@@ -67,4 +67,23 @@ namespace mongo{
 
 	}
 
+	void postNotification( const char *opstr, const char *ns, const BSONObj& obj, BSONObj *patt, const BSONObj* fullObj){
+		switch(*opstr){
+		case 'i':
+			MongodbChangeNotifier::Instance()->postNotification(INSERT,ns,obj,obj);
+			break;
+		case 'u':
+			if(patt)
+				MongodbChangeNotifier::Instance()->postNotification(UPDATE,ns,*patt,fullObj ? *fullObj : obj); 
+			
+			break;
+		case 'd':
+			MongodbChangeNotifier::Instance()->postNotification(DELETE,ns,obj,BSONObj()); 
+			break;
+		default:
+			break;
+		}
+
+	}
+
 }

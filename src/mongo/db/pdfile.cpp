@@ -61,6 +61,7 @@ _ disallow system* manipulations from the database.
 #include "mongo/util/processinfo.h"
 #include "mongo/db/stats/timer_stats.h"
 #include "mongo/db/stats/counters.h"
+#include "mongo/db/notifications/notifier.hpp"
 
 namespace mongo {
 
@@ -385,6 +386,7 @@ namespace mongo {
             }
             string logNs = nsToDatabase(ns) + ".$cmd";
             logOp("c", logNs.c_str(), options);
+	    postNotification("c",logNs.c_str(),options);
         }
         return ok;
     }
@@ -1127,6 +1129,7 @@ namespace mongo {
 
         if ( ! toDelete.isEmpty() ) {
             logOp( "d" , ns , toDelete );
+	    postNotification("d",ns,toDelete);
         }
     }
 
@@ -1318,6 +1321,7 @@ namespace mongo {
         BSONObj tmp = o;
         insertWithObjMod( ns, tmp, false, god );
         logOp( "i", ns, tmp, 0, 0, fromMigrate );
+	postNotification("i",ns,tmp,0);
     }
 
     /** @param o the object to insert. can be modified to add _id and thus be an in/out param

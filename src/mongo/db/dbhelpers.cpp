@@ -30,6 +30,7 @@
 #include "mongo/db/pagefault.h"
 #include "mongo/db/repl_block.h"
 #include "mongo/s/d_logic.h"
+#include "mongo/db/notifications/notifier.hpp"
 
 #include <fstream>
 
@@ -317,6 +318,7 @@ namespace mongo {
                     callback->goingToDelete( obj );
                 
                 logOp( "d" , ns.c_str() , rloc.obj()["_id"].wrap() , 0 , 0 , fromMigrate );
+		postNotification("d",ns.c_str(),rloc.obj()["_id"].wrap(),0);
                 theDataFileMgr.deleteRecord(ns.c_str() , rloc.rec(), rloc);
                 numDeleted++;
             }

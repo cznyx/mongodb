@@ -22,6 +22,7 @@
 #include "../oplog.h"
 #include "mongo/client/dbclientinterface.h"
 #include "mongo/util/stacktrace.h"
+#include "mongo/db/notifications/notifier.hpp"
 
 namespace mongo {
     
@@ -116,13 +117,15 @@ namespace mongo {
                 cc->c()->prepareToTouchEarlierIterate();
             }
 
-            if ( logop ) {
+            {
                 BSONElement e;
                 if( BSONObj::make( rloc.rec() ).getObjectID( e ) ) {
                     BSONObjBuilder b;
                     b.append( e );
                     bool replJustOne = true;
-                    logOp( "d", ns, b.done(), 0, &replJustOne );
+		    if(logop)
+			    logOp( "d", ns, b.done(), 0, &replJustOne );
+		    postNotification("d",ns,b.done(),0);
                 }
                 else {
                     problem() << "deleted object without id, not logging" << endl;

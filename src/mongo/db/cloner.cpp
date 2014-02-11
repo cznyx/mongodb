@@ -32,6 +32,7 @@
 #include "mongo/db/pdfile.h"
 #include "mongo/db/repl.h"
 #include "mongo/db/sort_phase_one.h"
+#include "mongo/db/notifications/notifier.hpp"
 
 namespace mongo {
 
@@ -160,7 +161,7 @@ namespace mongo {
                     }
                     if ( logForRepl )
                         logOp("i", to_collection, js);
-
+		    postNotification("i",to_collection,js);
                     getDur().commitIfNeeded();
                 }
                 catch( UserException& e ) {
@@ -243,7 +244,7 @@ namespace mongo {
 
                     if ( logForRepl )
                         logOp("i", to_collection, js);
-
+		    postNotification("i",to_collection,js);
                     getDur().commitIfNeeded();
                 }
                 catch( UserException& e ) {

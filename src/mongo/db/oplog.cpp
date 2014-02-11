@@ -41,7 +41,6 @@
 #include "mongo/util/elapsed_tracker.h"
 #include "mongo/util/file.h"
 #include "mongo/util/startup_test.h"
-#include "mongo/db/notifications/notifier.hpp"
 
 namespace mongo {
 
@@ -322,7 +321,7 @@ namespace mongo {
     void logOpInitiate(const BSONObj& obj) {
         _logOpRS("n", "", 0, obj, 0, 0, false);
     }
-
+  
     /*@ @param opstr:
           c userCreateNS
           i insert
@@ -338,22 +337,6 @@ namespace mongo {
 
         logOpForSharding( opstr , ns , obj , patt );
         logOpForDbHash( opstr , ns , obj , patt );
-	switch(*opstr){
-	case 'i':
-		MongodbChangeNotifier::Instance()->postNotification(INSERT,ns,obj,obj);
-		break;
-	case 'u':
-		if(patt)
-			MongodbChangeNotifier::Instance()->postNotification(UPDATE,ns,*patt,fullObj ? *fullObj : obj); 
-
-		break;
-	case 'd':
-		MongodbChangeNotifier::Instance()->postNotification(DELETE,ns,obj,BSONObj()); 
-		break;
-	default:
-		break;
-	}
-
     }
 
     void createOplog() {

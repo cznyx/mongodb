@@ -803,6 +803,7 @@ namespace mongo {
                                         cc().curop()->parent() == NULL,
                                         false);
         logOp("i", ns, js);
+	postNotification("i",ns,js);
     }
 
     NOINLINE_DECL void insertMulti(bool keepGoing, const char *ns, vector<BSONObj>& objs, CurOp& op) {
